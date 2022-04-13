@@ -13,9 +13,9 @@ class Counter(commands.Cog):
     async def on_ready(self):
         await self.client.change_presence(status=discord.Status.online, activity=discord.Game('Commands: !help'))
         await self.client.wait_until_ready()
-        self.guild = self.client.get_guild(963556948526104606)
+        self.guild = self.client.get_guild(os.getenv('SERVER_ID'))
         print(f'Бот в сети {self.client.user}')
-        self.channel = self.guild.get_channel(963556949021065221)
+        self.channel = self.guild.get_channel(os.getenv('CHANNEL_ID'))
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
