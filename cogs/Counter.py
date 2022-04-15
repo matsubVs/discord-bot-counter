@@ -31,7 +31,7 @@ class Counter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.message):
-        if message.author.bot:
+        if message.author.bot or message.content.startswith('!'):
             return
 
         if message.channel.id == int(self.channel_id):
@@ -53,6 +53,26 @@ class Counter(commands.Cog):
             await self.client.process_commands(self, message)
         except TypeError:
             pass
+
+    @commands.command(aliases=['m'])
+    async def user_messages(self, ctx, member: discord.Member = None) -> None:
+        if not member:
+            users = DB.get_all_users()
+            message = ''
+            for user in users:
+                message += f'{user.name} отправил {user.messages} сообщений!\n'
+
+            await ctx.author.send(message)
+        else:
+            user = DB.get_user(str(member.id))
+
+            message = ''
+            if user:
+                message += f'{user.name} отправил {user.messages} сообщений!'
+            else:
+                message += 'Пользователь не найден!'
+
+            await ctx.author.send(message)
 
 
 def setup(client):

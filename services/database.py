@@ -1,3 +1,5 @@
+from typing import List
+
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
@@ -66,6 +68,8 @@ class DBLayer:
 
         return new_user
 
+    def get_all_users(self) -> List[User]:
+        return list(self.session.query(User).all())
 
 DB = DBLayer()
 
