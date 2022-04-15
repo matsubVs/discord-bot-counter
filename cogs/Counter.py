@@ -1,34 +1,53 @@
+import os
+
 import discord
 from discord.ext import commands
-import os
+from services.database import DB
+
+session = DB.session
+
 
 class Counter(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.channel_id = os.getenv("CHANNEL_ID")
+        self.server_id = os.getenv("SERVER_ID")
         self.guild = None
         self.channel = None
 
-
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.client.change_presence(status=discord.Status.online, activity=discord.Game('Commands: !help'))
+        await self.client.change_presence(
+            status=discord.Status.online, activity=discord.Game("Commands: !help")
+        )
         await self.client.wait_until_ready()
-        self.guild = self.client.get_guild(os.getenv('SERVER_ID'))
-        print(f'Бот в сети {self.client.user}')
-        self.channel = self.guild.get_channel(os.getenv('CHANNEL_ID'))
+        self.guild =  self.client.get_guild(self.server_id)
+        print(f"Бот в сети {self.client.user}")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.channel.send('Пожалуйста, введите все аргументы команды')
-
+            await ctx.channel.send("Пожалуйста, введите все аргументы команды")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.message):
         if message.author.bot:
             return
-        if message.channel.id == 963556949021065221:
-            await message.channel.send('Sup!')
+
+        if message.channel.id == int(self.channel_id):
+            user_id = message.author.id
+            user_name = message.author.name
+
+            user_obj = DB.get_user(str(user_id))
+            if user_obj:
+                user_obj.messages += 1
+                session.add(user_obj)
+                session.commit()
+                await message.channel.send('Member in db')
+            else:
+                created_user = DB.create_user(user_name, str(user_id))
+
+                await message.channel.send('New member in db')
 
         try:
             await self.client.process_commands(self, message)
