@@ -10,6 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from pytz import timezone
 
 session = DB.session
+winners_pool = ('60.000', '50.000', '40.000', '30.000', '20.000')
 
 
 class Counter(commands.Cog):
@@ -28,7 +29,7 @@ class Counter(commands.Cog):
         await self.client.wait_until_ready()
 
         self.scheduler.add_job(
-            self.user_messages,
+            self.weekly_report,
             CronTrigger(
                 day_of_week=6,
                 hour=14,
@@ -40,7 +41,6 @@ class Counter(commands.Cog):
         self.scheduler.start()
 
         print("scheduler set up")
-        print(self.scheduler)
         self.guild = self.client.get_guild(int(self.server_id))
         print(f"Бот в сети {self.client.user}")
 
@@ -71,18 +71,35 @@ class Counter(commands.Cog):
         except TypeError:
             pass
 
-    async def user_messages(self) -> None:
+    async def weekly_report(self) -> None:
         channel = self.client.get_channel(int(os.getenv("CHANNEL_ID")))
+        role = get(self.guild.roles, role_id=int(os.getenv("ROLE_ID")))
 
         try:
             users = DB.get_all_users()
+            winners = DB.get_winners()
+
             message = ""
             for user in users:
                 discord_user = get(self.guild.members, id=int(user.code))
                 if discord_user:
                     message += f"{discord_user.mention} -`{user.messages}`\n"
 
+            message += f'{role.mention}\n\n'
+            message += 'Вот и подошел к концу еженедельный отчет\n'
+            message += 'Призовые места:\n'
+
+            for num, winner in enumerate(winners):
+                discord_user = get(self.guild.members, id=int(winner.code))
+                if discord_user:
+                    message += f'{discord_user.mention} - {winners_pool[num]}\n'
+
+            message += 'Деньги отправятся банком в ближайшее время'
+
             await channel.send(message)
+
+            DB.clear_db()
+
         except Exception as e:
             print(e)
 

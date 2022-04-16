@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, desc
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import sessionmaker
 
@@ -76,6 +76,12 @@ class DBLayer:
     def get_all_users(self) -> List[User]:
         return list(self.session.query(User).all())
 
+    def get_winners(self) -> List[User]:
+        return self.session.query(User).filter(User.messages > 0).limit(5).order_by(desc(User.messages)).all()
+
+    def clear_db(self):
+        self.session.query(User).filter(User.id > 0).delete(synchronize_session='fetch')
+        self.session.commit()
 
 DB = DBLayer()
 
