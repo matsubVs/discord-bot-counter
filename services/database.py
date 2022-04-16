@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from services.models import UserModel, User, Base
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 
@@ -22,11 +23,13 @@ class DBLayer:
         "port": "5432",
         "username": os.getenv("DB_USER"),
         "password": os.getenv("DB_PASS"),
-        "database": os.getenv("DB_NAME")
+        "database": os.getenv("DB_NAME"),
     }
 
     def __init__(self):
-        self.connection = psycopg2.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'))
+        self.connection = psycopg2.connect(
+            user=os.getenv("DB_USER"), password=os.getenv("DB_PASS")
+        )
         self.connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         self.engine = None
 
@@ -38,9 +41,11 @@ class DBLayer:
     def __check_database(self):
         cursor = self.connection.cursor()
         try:
-            sql_create_database = cursor.execute(f'create database {os.getenv("DB_NAME")}')
+            sql_create_database = cursor.execute(
+                f'create database {os.getenv("DB_NAME")}'
+            )
         except Exception as e:
-            print('DATABASE ALREADY EXISTS')
+            print("DATABASE ALREADY EXISTS")
 
         cursor.close()
 
@@ -59,10 +64,10 @@ class DBLayer:
 
     def create_user(self, user_name: str, user_code: str) -> UserModel:
         new_user = UserModel(
-                    code=user_code,
-                    name=user_name,
-                    messages=1,
-                )
+            code=user_code,
+            name=user_name,
+            messages=1,
+        )
         self.session.add(new_user)
         self.session.commit()
 
@@ -70,6 +75,7 @@ class DBLayer:
 
     def get_all_users(self) -> List[User]:
         return list(self.session.query(User).all())
+
 
 DB = DBLayer()
 

@@ -21,4 +21,5 @@ class UserModel:
     name: constr(max_length=63)
     messages: int
 
+
 mapper(UserModel, User)

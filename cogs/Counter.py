@@ -4,6 +4,10 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 from services.database import DB
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+
+from pytz import timezone
 
 session = DB.session
 
@@ -14,7 +18,7 @@ class Counter(commands.Cog):
         self.channel_id = os.getenv("CHANNEL_ID")
         self.server_id = os.getenv("SERVER_ID")
         self.guild = None
-        self.channel = None
+        self.scheduler = AsyncIOScheduler()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -22,7 +26,22 @@ class Counter(commands.Cog):
             status=discord.Status.online, activity=discord.Game("Commands: !help")
         )
         await self.client.wait_until_ready()
-        self.guild =  self.client.get_guild(self.server_id)
+
+        self.scheduler.add_job(
+            self.user_messages,
+            CronTrigger(
+                day_of_week=6,
+                hour=14,
+                minute=0,
+                second=0,
+                timezone=timezone("Europe/Moscow"),
+            ),
+        )
+        self.scheduler.start()
+
+        print("scheduler set up")
+        print(self.scheduler)
+        self.guild = self.client.get_guild(int(self.server_id))
         print(f"Бот в сети {self.client.user}")
 
     @commands.Cog.listener()
@@ -32,7 +51,7 @@ class Counter(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.message):
-        if message.author.bot or message.content.startswith('!'):
+        if message.author.bot or message.content.startswith("!"):
             return
 
         if message.channel.id == int(self.channel_id):
@@ -44,25 +63,26 @@ class Counter(commands.Cog):
                 user_obj.messages += 1
                 session.add(user_obj)
                 session.commit()
-                await message.channel.send('member in db')
             else:
                 created_user = DB.create_user(user_name, str(user_id))
-
-                await message.channel.send('New member in db')
 
         try:
             await self.client.process_commands(self, message)
         except TypeError:
             pass
 
-    @commands.command(aliases=['m'])
-    async def user_messages(self, ctx) -> None:
+    async def user_messages(self) -> None:
+        channel = self.client.get_channel(int(os.getenv("CHANNEL_ID")))
+
         try:
             users = DB.get_all_users()
+            message = ""
             for user in users:
-                discord_user = get(ctx.guild.members, id=int(user.code))
+                discord_user = get(self.guild.members, id=int(user.code))
                 if discord_user:
-                    await ctx.channel.send(f'{discord_user.mention} отправил {user.messages} сообщений!')
+                    message += f"{discord_user.mention} -`{user.messages}`\n"
+
+            await channel.send(message)
         except Exception as e:
             print(e)
 
