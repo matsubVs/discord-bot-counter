@@ -7,8 +7,7 @@ from dotenv import load_dotenv
 from cogs import Counter
 
 intents = discord.Intents.default()
-intents.typing = False
-intents.presences = False
+intents.members = True
 
 load_dotenv()
 

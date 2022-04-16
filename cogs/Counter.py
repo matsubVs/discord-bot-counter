@@ -2,6 +2,7 @@ import os
 
 import discord
 from discord.ext import commands
+from discord.utils import get
 from services.database import DB
 
 session = DB.session
@@ -43,7 +44,7 @@ class Counter(commands.Cog):
                 user_obj.messages += 1
                 session.add(user_obj)
                 session.commit()
-                await message.channel.send('Member in db')
+                await message.channel.send('member in db')
             else:
                 created_user = DB.create_user(user_name, str(user_id))
 
@@ -55,24 +56,15 @@ class Counter(commands.Cog):
             pass
 
     @commands.command(aliases=['m'])
-    async def user_messages(self, ctx, member: discord.Member = None) -> None:
-        if not member:
+    async def user_messages(self, ctx) -> None:
+        try:
             users = DB.get_all_users()
-            message = ''
             for user in users:
-                message += f'{user.name} отправил {user.messages} сообщений!\n'
-
-            await ctx.author.send(message)
-        else:
-            user = DB.get_user(str(member.id))
-
-            message = ''
-            if user:
-                message += f'{user.name} отправил {user.messages} сообщений!'
-            else:
-                message += 'Пользователь не найден!'
-
-            await ctx.author.send(message)
+                discord_user = get(ctx.guild.members, id=int(user.code))
+                if discord_user:
+                    await ctx.channel.send(f'{discord_user.mention} отправил {user.messages} сообщений!')
+        except Exception as e:
+            print(e)
 
 
 def setup(client):
