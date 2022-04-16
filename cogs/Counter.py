@@ -63,8 +63,10 @@ class Counter(commands.Cog):
                 user_obj.messages += 1
                 session.add(user_obj)
                 session.commit()
+                print(f'message reg from {user_obj.name} - {user_obj.messages}')
             else:
                 created_user = DB.create_user(user_name, str(user_id))
+                print(f'NEW message reg from {created_user.name} - {created_user.messages}')
 
         try:
             await self.client.process_commands(self, message)
@@ -73,7 +75,7 @@ class Counter(commands.Cog):
 
     async def weekly_report(self) -> None:
         channel = self.client.get_channel(int(os.getenv("CHANNEL_ID")))
-        role = get(self.guild.roles, role_id=int(os.getenv("ROLE_ID")))
+        role = get(self.guild.roles, id=int(os.getenv("ROLE_ID")))
 
         try:
             users = DB.get_all_users()
@@ -83,18 +85,17 @@ class Counter(commands.Cog):
             for user in users:
                 discord_user = get(self.guild.members, id=int(user.code))
                 if discord_user:
-                    message += f"{discord_user.mention} -`{user.messages}`\n"
+                    message += f"{discord_user.mention} - `{user.messages}`\n"
 
-            message += f'{role.mention}\n\n'
-            message += 'Вот и подошел к концу еженедельный отчет\n'
-            message += 'Призовые места:\n'
+            message += f'\n{role.mention}\n\n'
+            message += 'Салют!\n\n'
 
             for num, winner in enumerate(winners):
                 discord_user = get(self.guild.members, id=int(winner.code))
                 if discord_user:
-                    message += f'{discord_user.mention} - {winners_pool[num]}\n'
+                    message += f'{num + 1}. {discord_user.mention} - {winners_pool[num]}\n'
 
-            message += 'Деньги отправятся банком в ближайшее время'
+            message += '\nДеньги будут отправлены банком в ближайшее время'
 
             await channel.send(message)
 

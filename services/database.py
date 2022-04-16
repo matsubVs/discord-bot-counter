@@ -77,7 +77,7 @@ class DBLayer:
         return list(self.session.query(User).all())
 
     def get_winners(self) -> List[User]:
-        return self.session.query(User).filter(User.messages > 0).limit(5).order_by(desc(User.messages)).all()
+        return self.session.query(User).filter(User.messages > 0).order_by(desc(User.messages)).limit(5).all()
 
     def clear_db(self):
         self.session.query(User).filter(User.id > 0).delete(synchronize_session='fetch')
